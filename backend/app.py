@@ -96,16 +96,21 @@ def overall_stats():
         ORDER BY gpa DESC
         LIMIT 5;
     """
+    query4="""SELECT 
+        ROUND((SUM(sgpa * credits) / SUM(credits))::numeric, 2) AS cgpa,
+        SUM(credits) AS total_credits,
+        COUNT(*) AS total_sems
+        FROM semesters;"""
 
     try:
         rows = run_query(query)   # list of dicts
         rows2 = run_query(query2) # list of dicts
         rows3 = run_query(query3) # list of dicts
-
+        rows4 = run_query(query4) 
         returndata = {
-            "cgpa": 8.6,  # placeholder, you can compute later if needed
-            "totalCredits": 82,
-            "completedSemesters": 4,
+            "cgpa": rows4[0]["cgpa"],  # placeholder, you can compute later if needed
+            "totalCredits": rows4[0]["total_credits"],
+            "completedSemesters": rows4[0]["total_sems"],
             "gradeDistribution": [
                 {"grade": row["grade"], "count": row["count"]}
                 for row in rows
@@ -150,15 +155,28 @@ def custom_queries(queryId: str):
             },
             "2": {
                 "name": "Lowest GPA Semester",
-                "query": "SELECT 'Semester 2' as semester, MIN(overall_sgpa) as gpa FROM semester2;"
+                "query": """SELECT CONCAT('Semester ', sem_id) AS semester, sgpa
+                            FROM semesters
+                            ORDER BY sgpa ASC
+                            LIMIT 1;"""
             },
             "3": {
                 "name": "Grade Distribution Analysis",
-                "query": "SELECT grade, COUNT(*) as count FROM semester3 GROUP BY grade;"
+                "query": """SELECT grade, COUNT(*) as count FROM (
+                        SELECT grade FROM semester1
+                        UNION ALL
+                        SELECT grade FROM semester2
+                        UNION ALL
+                        SELECT grade FROM semester3
+                        UNION ALL
+                        SELECT grade FROM semester4
+                    ) as all_grades
+                    GROUP BY grade
+                    ORDER BY count desc;"""
             },
             "4": {
                 "name": "Credit Analysis",
-                "query": "SELECT 'Semester 4' as semester, COUNT(*) * 4 as credits FROM semester4;"
+                "query": "SELECT CONCAT('Semester ', sem_id) AS semester, credits FROM semesters;"
             }
         }
 
