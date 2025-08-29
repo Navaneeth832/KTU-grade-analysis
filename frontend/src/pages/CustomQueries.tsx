@@ -12,6 +12,8 @@ export const CustomQueries: React.FC = () => {
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [isAwaitingPrompt, setIsAwaitingPrompt] = useState(false);
 
   useEffect(() => {
     fetchCustomQueries();
@@ -39,6 +41,7 @@ export const CustomQueries: React.FC = () => {
           name: 'Credit Analysis',
           description: 'Analyze credits completed per semester',
         },
+        { id: '5', name: 'Custom query with text', description: 'Enter your prompt in English and AI will query the table.' }
       ]);
     
   };
@@ -46,7 +49,7 @@ export const CustomQueries: React.FC = () => {
   const executeQuery = async (queryId: string) => {
     try {
       setLoading(true);
-      const data = await apiService.executeCustomQuery(queryId);
+      const data = await apiService.executeCustomQuery(queryId,'');
       if (!data || !data.headers || !data.data) {
         setQueryResult({ query: "Empty", headers: [], data: [] });
       } else {
@@ -106,7 +109,42 @@ export const CustomQueries: React.FC = () => {
   const handleQueryChange = (queryId: string) => {
     setSelectedQuery(queryId);
     setDropdownOpen(false);
-    executeQuery(queryId);
+    setQueryResult(null);
+    setPrompt('');
+    if (queryId === '5') {
+      setIsAwaitingPrompt(true);
+    } else {
+      setIsAwaitingPrompt(false);
+      executeQuery(queryId);
+    }
+  };
+
+  const handlePromptSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prompt) {
+      toast.error('Please enter a prompt');
+      return;
+    }
+    setIsAwaitingPrompt(false);
+    setLoading(true);
+    try {
+      const data = await apiService.executeCustomQuery('5', prompt);
+      await new Promise(res => setTimeout(res, 1500));
+      /*const mockResult: QueryResult = {
+        query: `Result for: "${prompt}"`,
+        headers: ['Student ID', 'Course', 'Final Grade'],
+        data: [
+          ['101', 'Advanced Algorithms', 'A'],
+          ['101', 'Machine Learning', 'A-'],
+        ],
+      };*/
+      setQueryResult(data);
+    } catch (error) {
+      console.error('Error executing custom text query:', error);
+      toast.error('Failed to execute custom text query');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const selectedQueryData = queries.find(q => q.id === selectedQuery);
@@ -178,6 +216,35 @@ export const CustomQueries: React.FC = () => {
               </AnimatePresence>
             </div>
           </motion.div>
+
+          {isAwaitingPrompt && !loading && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20"
+            >
+              <form onSubmit={handlePromptSubmit}>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Enter your custom query</h3>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  rows={3}
+                  placeholder="e.g., 'Show my GPA in semesters where I took more than 5 courses'"
+                />
+                <motion.button
+                  type="submit"
+                  className="mt-4 w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Database className="h-5 w-5 mr-2" />
+                  Execute Query
+                </motion.button>
+              </form>
+            </motion.div>
+          )}
 
           {loading && <LoadingSpinner />}
 

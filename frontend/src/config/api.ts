@@ -16,6 +16,6 @@ export const endpoints = {
   overallStats: '/overall-stats',
   semesterData: (id: number) => `/semester/${id}`,
   semesters: '/semesters',
-  customQuery: (queryId: string) => `/custom-query/${queryId}`,
+  customQuery: (queryId: string,prompt: string) => `/custom-query/${queryId}/?prompt=${encodeURIComponent(prompt)}`,
   customQueries: '/custom-queries',
 };

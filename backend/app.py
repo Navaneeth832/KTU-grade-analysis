@@ -3,8 +3,12 @@ from fastapi import FastAPI, HTTPException
 import psycopg2
 import pandas as pd
 import traceback
+import os
+from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+from promptquery import query_maker
 
+load_dotenv()
 
 app = FastAPI()
 
@@ -19,9 +23,9 @@ def run_query(query):
     conn = psycopg2.connect(
         dbname="postgres",
         user="postgres",
-        password="butterchicken1",
-        host="172.21.251.136",
-        port="5432"
+        password=os.getenv("DB_PASSWORD"),
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT")
     )
     df = pd.read_sql(query, conn)
     conn.close()
@@ -133,7 +137,7 @@ def overall_stats():
 
 
 @app.get("/custom-query/{queryId}")
-def custom_queries(queryId: str):
+def custom_queries(queryId: str,prompt: str):
     try:
         query_map = {
             "1": {
@@ -177,14 +181,26 @@ def custom_queries(queryId: str):
             "4": {
                 "name": "Credit Analysis",
                 "query": "SELECT CONCAT('Semester ', sem_id) AS semester, credits FROM semesters;"
+            },
+            "5": {
+                "name": "Custom query with AI",
+                "query": ""
             }
         }
 
         if queryId not in query_map:
             raise HTTPException(status_code=400, detail="Invalid queryId")
-
         query_info = query_map[queryId]
-        rows = run_query(query_info["query"])
+        if queryId == "5":
+            print("Generating query for prompt:", prompt)
+            query= query_maker(prompt)
+            print(query)
+            if query=='Not a query':
+                raise HTTPException(status_code=400, detail="The prompt does not correspond to a valid SQL query.")
+            rows=run_query(query)
+        else:
+            
+            rows = run_query(query_info["query"])
 
         if not rows:
             return {
@@ -239,4 +255,5 @@ def semester_analysis(semester_id: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
