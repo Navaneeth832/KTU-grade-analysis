@@ -46,10 +46,10 @@ export const CustomQueries: React.FC = () => {
     
   };
 
-  const executeQuery = async (queryId: string) => {
+  const executeQuery = async (queryId: string, prompt: string = '') => {
     try {
       setLoading(true);
-      const data = await apiService.executeCustomQuery(queryId,'');
+      const data = await apiService.executeCustomQuery(queryId, prompt);
       if (!data || !data.headers || !data.data) {
         setQueryResult({ query: "Empty", headers: [], data: [] });
       } else {
@@ -128,6 +128,7 @@ export const CustomQueries: React.FC = () => {
     setIsAwaitingPrompt(false);
     setLoading(true);
     try {
+      console.log("🔎 Submitting prompt:", prompt);
       const data = await apiService.executeCustomQuery('5', prompt);
       await new Promise(res => setTimeout(res, 1500));
       /*const mockResult: QueryResult = {

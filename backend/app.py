@@ -1,5 +1,6 @@
 # backend/main.py (FastAPI)
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,Query
+from typing import Optional
 import psycopg2
 import pandas as pd
 import traceback
@@ -137,7 +138,7 @@ def overall_stats():
 
 
 @app.get("/custom-query/{queryId}")
-def custom_queries(queryId: str,prompt: str):
+def custom_queries(queryId: str,prompt: Optional[str] = Query(None)):
     try:
         query_map = {
             "1": {

@@ -16,3 +16,4 @@ Rules:
    Not a query
 4. Use correct PostgreSQL syntax (double quotes not needed unless column names require).
 5. Be strict: Output must be only a single SQL statement or "Not a query".
+6.Do not add ```sql, triple quotes, or any text outside the SQL query.

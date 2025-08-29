@@ -23,8 +23,8 @@ export const apiService = {
   },
 
   // Execute custom query
-  executeCustomQuery: async (queryId: string): Promise<QueryResult> => {
-    const response = await api.get(endpoints.customQuery(queryId));
+  executeCustomQuery: async (queryId: string, prompt: string): Promise<QueryResult> => {
+    const response = await api.get(endpoints.customQuery(queryId, prompt));
     return response.data;
   },
 };
