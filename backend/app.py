@@ -8,6 +8,10 @@ import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from promptquery import query_maker
+from database_maker import create_database_and_tables
+from sql_generator import sql_generate
+from extraction import extract_pdf
+from pathlib import Path
 
 load_dotenv()
 
@@ -256,5 +260,19 @@ def semester_analysis(semester_id: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/database-creation")
+def create_database(db_name: str,sem: str,filepath):
+    try:
+        create_database_and_tables(db_name)
+        data=extract_pdf(Path(filepath))
+        sql_generate(db_name,sem,data)
+        return {"message": f"Database '{db_name}' and tables created successfully with data inserted."}
+    except Exception as e:
+        print("❌ Error in /database-creation:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    
 
 
