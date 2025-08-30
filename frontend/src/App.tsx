@@ -4,6 +4,9 @@ import { Toaster } from 'react-hot-toast';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { Home } from './pages/Home';
+import { Start } from './pages/Start';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import { OverallAnalysis } from './pages/OverallAnalysis';
 import { SemesterAnalysis } from './pages/SemesterAnalysis';
 import { CustomQueries } from './pages/CustomQueries';
@@ -22,7 +25,10 @@ function App() {
           <main className="flex-1 lg:ml-72 transition-all duration-300">
             <div className="p-6">
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Start />} />
+                <Route path="/Register" element={<Register />} />
+                <Route path="/Login" element={<Login />} />
+                <Route path="/home" element={<Home />} />
                 <Route path="/overall-analysis" element={<OverallAnalysis />} />
                 <Route path="/semester-analysis" element={<SemesterAnalysis />} />
                 <Route path="/custom-queries" element={<CustomQueries />} />

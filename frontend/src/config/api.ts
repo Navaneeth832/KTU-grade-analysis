@@ -18,4 +18,5 @@ export const endpoints = {
   semesters: '/semesters',
   customQuery: (queryId: string,prompt: string) => `/custom-query/${queryId}?prompt=${encodeURIComponent(prompt)}`,
   customQueries: '/custom-queries',
+  login: '/login',
 };

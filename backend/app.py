@@ -24,9 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def run_query(query):
+def run_query(query,db="postgres"):
     conn = psycopg2.connect(
-        dbname="postgres",
+        dbname=db,
         user="postgres",
         password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
@@ -273,6 +273,19 @@ def create_database(db_name: str,sem: str,filepath):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
+@app.get("/login")
+def login(dbname,password):
+    prompt="select * from students where ktu_id='"+dbname+"' and password='"+password+"';"
+    try:
+        rows=run_query(prompt,"student_login")
+        if len(rows)==0:
+            return {"message":"Invalid Credentials"}
+        else:
+            return {"message":"Login Successful"}
+    except Exception as e:
+        print("❌ Error in /login:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
     
 
 

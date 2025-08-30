@@ -27,4 +27,9 @@ export const apiService = {
     const response = await api.get(endpoints.customQuery(queryId, prompt));
     return response.data;
   },
+
+  executelogin: async (ktuId: string, password: string): Promise<{ token: string }> => {
+    const response = await api.post(endpoints.login, { ktuId, password });
+    return response.data;
+  },
 };
