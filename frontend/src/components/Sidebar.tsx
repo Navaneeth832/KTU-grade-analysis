@@ -1,21 +1,31 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Calendar, Search, X } from 'lucide-react';
+import { Home, BarChart3, Calendar, Search, X, LogOut } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  token: string | null;
+  setToken: (token: string | null) => void;
 }
 
 const navigationItems = [
-  { path: '/', icon: Home, label: 'Home' },
+  { path: '/home', icon: Home, label: 'Home' },
   { path: '/overall-analysis', icon: BarChart3, label: 'Overall Analysis' },
   { path: '/semester-analysis', icon: Calendar, label: 'Semester-wise Analysis' },
   { path: '/custom-queries', icon: Search, label: 'Custom Queries' },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, token, setToken }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    setToken(null);
+    navigate('/');
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -81,6 +91,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             ))}
           </nav>
         </div>
+
+        {token && (
+          <div className="absolute bottom-0 w-full p-6">
+            <motion.button
+              onClick={handleLogout}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center justify-center w-full px-4 py-3 text-red-500 bg-red-100 rounded-xl hover:bg-red-200 transition-all duration-300"
+            >
+              <LogOut className="w-5 h-5 mr-2" />
+              Logout
+            </motion.button>
+          </div>
+        )}
       </motion.aside>
     </>
   );

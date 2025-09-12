@@ -11,9 +11,23 @@ export const api = axios.create({
   },
 });
 
+// Add a request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // API endpoints
 export const endpoints = {
-  overallStats: '/overall-stats',
+  overallStats: `/overall-stats`,
   semesterData: (id: number) => `/semester/${id}`,
   semesters: '/semesters',
   customQuery: (queryId: string,prompt: string) => `/custom-query/${queryId}?prompt=${encodeURIComponent(prompt)}`,

@@ -21,7 +21,7 @@ export const OverallAnalysis: React.FC = () => {
   const fetchOverallStats = async () => {
     try {
       setLoading(true);
-      const data = await apiService.getOverallStats();
+      const data = await apiService.getOverallStats(); 
       setStats(data);
     } catch (error) {
       console.error('Error fetching overall stats:', error);
@@ -39,10 +39,10 @@ export const OverallAnalysis: React.FC = () => {
           { grade: 'C+', count: 2 },
         ],
         semesterGpas: [
-          { semester: 'Fall 2022', gpa: 3.6 },
-          { semester: 'Spring 2023', gpa: 3.8 },
-          { semester: 'Fall 2023', gpa: 3.9 },
-          { semester: 'Spring 2024', gpa: 3.7 },
+          { semester: "1", gpa: 3.6 },
+          { semester: "2", gpa: 3.8 },
+          { semester: "3", gpa: 3.9 },
+          { semester: "4", gpa: 3.7 },
         ],
         subjectPerformance: [
           { subject: 'Mathematics', averageGrade: 3.8 },

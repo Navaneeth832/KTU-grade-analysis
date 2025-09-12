@@ -15,7 +15,7 @@ def sql_generate(DB_NAME,sem,data):
 
     try:
         # 1. Establish the connection
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = psycopg2.connect(dbname=DB_NAME.lower(), user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
         cursor = conn.cursor()
 
         # 2. Get the column names from the data
@@ -25,7 +25,7 @@ def sql_generate(DB_NAME,sem,data):
             placeholders = ', '.join(['%s'] * len(columns))
 
             # 3. Construct the query template
-            insert_query_template = f"INSERT INTO {sem} ({columns_str}) VALUES ({placeholders});"
+            insert_query_template = f"INSERT INTO grade_sheets ({columns_str}) VALUES ({placeholders});"
 
             # 4. Prepare a list of tuples with the values
             values_list = [tuple(d.values()) for d in data]

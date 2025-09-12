@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { apiService } from '../services/api';
 
 const Login: React.FC = () => {
   const [ktuId, setKtuId] = useState('');
@@ -13,11 +14,8 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/login', {
-        ktuId,
-        password,
-      });
-      localStorage.setItem('token', response.data.token);
+      const token = await apiService.executelogin(ktuId, password);
+      localStorage.setItem('authToken', token);
       navigate('/home'); // Redirect to dashboard after successful login
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');

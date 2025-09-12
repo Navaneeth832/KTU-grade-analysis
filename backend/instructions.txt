@@ -3,11 +3,7 @@ The user will provide natural language input related to the given database schem
 Your task: Convert it into the correct SQL query for PostgreSQL. 
 
 Database schema:
-- semester1(sl_no, subject, subject_code, grade, gpa, subject_type, overall_sgpa)
-- semester2(sl_no, subject, subject_code, grade, gpa, subject_type, overall_sgpa)
-- semester3(sl_no, subject, subject_code, grade, gpa, subject_type, overall_sgpa)
-- semester4(sl_no, subject, subject_code, grade, gpa, subject_type, overall_sgpa)
-- semesters(sem_id, sgpa, credits)
+- grade_sheets(subject,subject_code, grade, gpa, subject_type, overall_sgpa,ktu_id,sem_id)
 
 Rules:
 1. ONLY return the SQL query. Do not explain. Do not add extra text. 

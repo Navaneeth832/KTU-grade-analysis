@@ -8,15 +8,16 @@ from tabulate import tabulate
 client = genai.Client()
 
 class Semester_Grade_Sheet(BaseModel):
-    sl_no: int
     subject: str
     subject_code: str
     grade: str
     gpa: float
     subject_type: str
     overall_sgpa: float
-
-filepath = pathlib.Path('sample.pdf')
+    ktu_id: str
+    sem_id: int
+    
+filepath = pathlib.Path('sample3.pdf')
 grade_map={
   'S':10,
   'A+':9,

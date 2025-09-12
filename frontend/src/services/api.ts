@@ -4,7 +4,7 @@ import { OverallStats, SemesterData, CustomQuery, QueryResult } from '../types';
 export const apiService = {
   // Fetch overall statistics
   getOverallStats: async (): Promise<OverallStats> => {
-    const response = await api.get(endpoints.overallStats);
+    const response = await api.post(endpoints.overallStats, {});
     return response.data;
   },
 
@@ -12,7 +12,6 @@ export const apiService = {
   // Fetch semester-specific data
   getSemesterData: async (semester: number): Promise<SemesterData> => {
     const response = await api.get(endpoints.semesterData(semester));
-    console.log("API Response:", response.data); // 👈 Check here
     return response.data;
   },
 
@@ -28,8 +27,8 @@ export const apiService = {
     return response.data;
   },
 
-  executelogin: async (ktuId: string, password: string): Promise<{ token: string }> => {
+  executelogin: async (ktuId: string, password: string): Promise<string> => {
     const response = await api.post(endpoints.login, { ktuId, password });
-    return response.data;
+    return response.data.token;
   },
 };
