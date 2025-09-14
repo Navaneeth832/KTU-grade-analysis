@@ -24,7 +24,7 @@ function App() {
         <div className="flex pt-20">
           {showSidebar && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
           
-          <main className="flex-1 lg:ml-72 transition-all duration-300">
+          <main className={`flex-1 ${showSidebar && sidebarOpen ? 'lg:ml-72' : ''} transition-all duration-300`}>
             <div className="p-6">
               <Routes>
                 <Route path="/" element={<Start />} />

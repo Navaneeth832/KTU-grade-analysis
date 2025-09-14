@@ -6,7 +6,7 @@ load_dotenv()
 
 # Your JSON data as a Python list of dictionaries
 data = [{'sl_no': 1, 'subject': 'DISCRETE MATHEMATICAL STRUCTURES', 'subject_code': 'MAT203', 'grade': 'S', 'gpa': 10, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 2, 'subject': 'DATA STRUCTURES', 'subject_code': 'CST201', 'grade': 'S', 'gpa': 10, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 3, 'subject': 'LOGIC SYSTEM DESIGN', 'subject_code': 'CST203', 'grade': 'A', 'gpa': 8.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 4, 'subject': 'OBJECT ORIENTED PROGRAMMING USING JAVA', 'subject_code': 'CST205', 'grade': 'A', 'gpa': 8.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 5, 'subject': 'PROFESSIONAL ETHICS', 'subject_code': 'HUT200', 'grade': 'C', 'gpa': 6.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 6, 'subject': 'SUSTAINABLE ENGINEERING', 'subject_code': 'MCN201', 'grade': 'B', 'gpa': 7.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 7, 'subject': 'DATA STRUCTURES LAB', 'subject_code': 'CSL201', 'grade': 'S', 'gpa': 10, 'subject_type': 'Lab', 'overall_sgpa': 9.14}, {'sl_no': 8, 'subject': 'OBJECT ORIENTED PROGRAMMING LAB (IN JAVA)', 'subject_code': 'CSL203', 'grade': 'S', 'gpa': 10, 'subject_type': 'Lab', 'overall_sgpa': 9.14}]
-
+credit_mapping={1:17,2:21,3:22,4:22,5:23,6:23,7:15,8:17}
 def sql_generate(DB_NAME,data):
     DB_USER = os.getenv("DB_USER")
     DB_PASS = os.getenv("DB_PASSWORD")
@@ -32,8 +32,11 @@ def sql_generate(DB_NAME,data):
 
             # 5. Execute the query using executemany for bulk insertion
             cursor.executemany(insert_query_template, values_list)
-
-            # 6. Commit the changes to the database
+            sem_id=data[0]['sem_id'][0]
+            credits=credit_mapping[sem_id]
+            cgpa=data[0]['overall_sgpa'][0]
+            
+            cursor.execute("insert into semesters values (%s,%s,%s,%s);",(sem_id,credits,cgpa,DB_NAME))
             conn.commit()
 
             print("Data inserted successfully! ✅")

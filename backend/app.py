@@ -110,6 +110,7 @@ def overall_stats(request: Request):
                 for row in rows3
             ]
         }
+        print(returndata)
         return returndata
 
     except Exception as e:
@@ -230,7 +231,7 @@ def get_semesters(request: Request):
             raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
 
         ktuid = token.split("Bearer ")[1].strip()
-        query = f"select distinct sem_id from grade_sheets where ktu_id='{ktuid}';"
+        query = f"select distinct sem_id from grade_sheets where ktu_id='{ktuid}' order by sem_id;"
         rows = run_query(query)
         return [row['sem_id'] for row in rows]
 

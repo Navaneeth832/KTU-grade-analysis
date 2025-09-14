@@ -3,7 +3,19 @@ The user will provide natural language input related to the given database schem
 Your task: Convert it into the correct SQL query for PostgreSQL. 
 
 Database schema:
-- grade_sheets(subject,subject_code, grade, gpa, subject_type, overall_sgpa,ktu_id,sem_id)
+btech_grades=# \d grade_sheets
+                      Table "public.grade_sheets"
+    Column    |          Type          | Collation | Nullable | Default
+--------------+------------------------+-----------+----------+---------
+ subject      | character varying(100) |           |          |
+ subject_code | character varying(20)  |           | not null |
+ grade        | character varying(5)   |           |          |
+ gpa          | double precision       |           |          |
+ subject_type | character varying(30)  |           |          |
+ overall_sgpa | double precision       |           |          |
+ ktu_id       | character varying(20)  |           | not null |
+ sem_id       | integer                |           |          |
+Indexes:
 
 Rules:
 1. ONLY return the SQL query. Do not explain. Do not add extra text. 
