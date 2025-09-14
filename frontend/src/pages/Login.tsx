@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { apiService } from '../services/api';
 
 const Login: React.FC = () => {
@@ -17,8 +16,12 @@ const Login: React.FC = () => {
       const token = await apiService.executelogin(ktuId, password);
       localStorage.setItem('authToken', token);
       navigate('/home'); // Redirect to dashboard after successful login
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Login failed. Please try again.');
+      } else {
+        setError('An unexpected error occurred.');
+      }
     }
   };
 

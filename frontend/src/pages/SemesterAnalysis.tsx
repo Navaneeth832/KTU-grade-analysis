@@ -20,16 +20,19 @@ export const SemesterAnalysis: React.FC = () => {
   }, []);
 
   const fetchSemesters = async () => {
-    setSemesters(['semester1', 'semester2', 'semester3', 'semester4']);
+    try {
+      const data = await apiService.getSemesters();
+      setSemesters(data.map((sem: number) => `semester${sem}`));
+    } catch (error) {
+      console.error('Error fetching semesters:', error);
+      toast.error('Failed to fetch semesters');
+    }
   };
 
   const fetchSemesterData = async (semester: string) => {
     try {
       setLoading(true);
-      let sem_id = 1;
-      if (semester === 'semester2') sem_id = 2;
-      if (semester === 'semester3') sem_id = 3;
-      if (semester === 'semester4') sem_id = 4;
+      const sem_id = parseInt(semester.replace('semester', ''));
 
       const data = await apiService.getSemesterData(sem_id);
       setSemesterData(data);

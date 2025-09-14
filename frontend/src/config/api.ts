@@ -5,7 +5,7 @@ export const BACKEND_URL = 'http://localhost:8000';
 
 export const api = axios.create({
   baseURL: BACKEND_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,4 +33,5 @@ export const endpoints = {
   customQuery: (queryId: string,prompt: string) => `/custom-query/${queryId}?prompt=${encodeURIComponent(prompt)}`,
   customQueries: '/custom-queries',
   login: '/login',
+  register: '/register',
 };

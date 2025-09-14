@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { api, endpoints } from "../config/api";
+import { AxiosError } from "axios";
 
 const Register = () => {
   const [ktuId, setKtuId] = useState("");
@@ -46,17 +47,22 @@ const Register = () => {
     }
 
     try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
+      await api.post(
+        endpoints.register,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
       navigate("/login");
-    } catch (error: any) {
-      setError(
-        error.response?.data?.message || "An error occurred during registration."
-      );
-    } finally {
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        setError(
+          error.response?.data?.message || "An error occurred during registration."
+        );
+      } else {
+        setError("An unexpected error occurred.");
+      }
+      console.log(error);
+    }finally {
       setLoading(false);
     }
   };

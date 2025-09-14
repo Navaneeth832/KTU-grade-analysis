@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -10,18 +10,10 @@ import Register from './pages/Register';
 import { OverallAnalysis } from './pages/OverallAnalysis';
 import { SemesterAnalysis } from './pages/SemesterAnalysis';
 import { CustomQueries } from './pages/CustomQueries';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
-
   const location = useLocation();
   const showSidebar = !['/', '/login', '/register'].includes(location.pathname);
 
@@ -30,18 +22,20 @@ function App() {
         <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         
         <div className="flex pt-20">
-          {showSidebar && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} token={token} setToken={setToken} />}
+          {showSidebar && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
           
           <main className="flex-1 lg:ml-72 transition-all duration-300">
             <div className="p-6">
               <Routes>
                 <Route path="/" element={<Start />} />
-                <Route path="/Register" element={<Register />} />
-                <Route path="/Login" element={<Login setToken={setToken} />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/overall-analysis" element={<OverallAnalysis />} />
-                <Route path="/semester-analysis" element={<SemesterAnalysis />} />
-                <Route path="/custom-queries" element={<CustomQueries />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/overall-analysis" element={<OverallAnalysis />} />
+                  <Route path="/semester-analysis" element={<SemesterAnalysis />} />
+                  <Route path="/custom-queries" element={<CustomQueries />} />
+                </Route>
               </Routes>
             </div>
           </main>

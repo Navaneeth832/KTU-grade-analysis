@@ -15,6 +15,11 @@ export const apiService = {
     return response.data;
   },
 
+  getSemesters: async (): Promise<number[]> => {
+    const response = await api.get(endpoints.semesters);
+    return response.data;
+  },
+
   // Fetch available custom queries
   getCustomQueries: async (): Promise<CustomQuery[]> => {
     const response = await api.get(endpoints.customQueries);

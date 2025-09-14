@@ -7,7 +7,7 @@ load_dotenv()
 # Your JSON data as a Python list of dictionaries
 data = [{'sl_no': 1, 'subject': 'DISCRETE MATHEMATICAL STRUCTURES', 'subject_code': 'MAT203', 'grade': 'S', 'gpa': 10, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 2, 'subject': 'DATA STRUCTURES', 'subject_code': 'CST201', 'grade': 'S', 'gpa': 10, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 3, 'subject': 'LOGIC SYSTEM DESIGN', 'subject_code': 'CST203', 'grade': 'A', 'gpa': 8.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 4, 'subject': 'OBJECT ORIENTED PROGRAMMING USING JAVA', 'subject_code': 'CST205', 'grade': 'A', 'gpa': 8.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 5, 'subject': 'PROFESSIONAL ETHICS', 'subject_code': 'HUT200', 'grade': 'C', 'gpa': 6.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 6, 'subject': 'SUSTAINABLE ENGINEERING', 'subject_code': 'MCN201', 'grade': 'B', 'gpa': 7.5, 'subject_type': 'Theory', 'overall_sgpa': 9.14}, {'sl_no': 7, 'subject': 'DATA STRUCTURES LAB', 'subject_code': 'CSL201', 'grade': 'S', 'gpa': 10, 'subject_type': 'Lab', 'overall_sgpa': 9.14}, {'sl_no': 8, 'subject': 'OBJECT ORIENTED PROGRAMMING LAB (IN JAVA)', 'subject_code': 'CSL203', 'grade': 'S', 'gpa': 10, 'subject_type': 'Lab', 'overall_sgpa': 9.14}]
 
-def sql_generate(DB_NAME,sem,data):
+def sql_generate(DB_NAME,data):
     DB_USER = os.getenv("DB_USER")
     DB_PASS = os.getenv("DB_PASSWORD")
     DB_HOST = os.getenv("DB_HOST")
@@ -15,7 +15,7 @@ def sql_generate(DB_NAME,sem,data):
 
     try:
         # 1. Establish the connection
-        conn = psycopg2.connect(dbname=DB_NAME.lower(), user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = psycopg2.connect(dbname='btech_grades', user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
         cursor = conn.cursor()
 
         # 2. Get the column names from the data

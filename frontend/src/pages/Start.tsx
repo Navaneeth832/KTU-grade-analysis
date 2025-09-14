@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Calendar, FormInput, FormInputIcon, LogIn, Search, TrendingUp } from 'lucide-react';
+import { FormInputIcon, LogIn, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Start: React.FC = () => {

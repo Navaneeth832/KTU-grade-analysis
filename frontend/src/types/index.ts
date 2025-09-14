@@ -44,6 +44,6 @@ export interface CustomQuery {
 
 export interface QueryResult {
   query: string;
-  data: any[];
+  data: Record<string, unknown>[];
   headers: string[];
 }

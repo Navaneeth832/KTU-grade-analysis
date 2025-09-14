@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { GraduationCap, Menu } from 'lucide-react';
+import { GraduationCap, Menu, Home, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   sidebarOpen: boolean;
@@ -8,6 +9,17 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('AuthToken');
+    navigate('/login');
+  };
+
+  const handleHome = () => {
+    navigate('/home');
+  };
+
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
@@ -38,6 +50,18 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
         </div>
 
         <div className="flex items-center space-x-4">
+          <button
+            onClick={handleHome}
+            className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <Home size={20} />
+          </button>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <LogOut size={20} />
+          </button>
           <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
             <span className="text-white font-semibold text-sm">ST</span>
           </div>

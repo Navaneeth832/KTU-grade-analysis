@@ -38,7 +38,7 @@ def display_ast_table(data):
     table = [item.values() for item in data]
     print(tabulate(table, headers, tablefmt="grid"))
 
-def extract_pdf(filepath):
+def extract_pdf(filepath,ktuid):
     prompt = "Scan this semester grade sheet and extract the details and provide the structured output."
     response = client.models.generate_content(
       model="gemini-2.5-flash",
@@ -62,6 +62,8 @@ def extract_pdf(filepath):
           i['gpa']=grade_map[i['grade']]
         else:
           i['gpa']=0
+      for item in output:
+        item['ktu_id'] = ktuid 
       display_ast_table(output)
       return output
       
