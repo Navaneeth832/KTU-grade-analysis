@@ -21,9 +21,9 @@ This project automates the process of calculating and analyzing academic grades 
 | Area    | Technologies                               |
 |---------|--------------------------------------------|
 | **Frontend**  | React, TypeScript, Vite, Tailwind CSS, Recharts, Axios, React Router |
-| **Backend**   | Python, FastAPI, PostgreSQL, Psycopg2, Pandas |
+| **Backend**   | Python, FastAPI, Firebase Admin SDK |
 | **AI/ML**     | Google Gemini API                          |
-| **Database**  | PostgreSQL                                 |
+| **Database**  | Firebase Firestore                         |
 
 ## Getting Started
 
@@ -33,7 +33,7 @@ Follow these instructions to set up and run the project on your local machine.
 
 - [Node.js](https://nodejs.org/) (v18 or later)
 - [Python](https://www.python.org/) (v3.9 or later)
-- [PostgreSQL](https://www.postgresql.org/download/)
+- A Firebase project with Firestore enabled
 - A Google AI API Key for the Gemini API. You can get one from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ### Backend Setup
@@ -55,19 +55,27 @@ Follow these instructions to set up and run the project on your local machine.
     pip install -r requirements.txt
     ```
 
-4.  **Set up the PostgreSQL database:**
-    - Create a database named `postgres`.
-    - Create another database named `btech_grades`.
-    - You will need to create the necessary tables. The table structure can be inferred from `backend/sql_generator.py` and `backend/app.py`.
+4.  **Set up Firebase Firestore:**
+    - Create a Firebase project.
+    - Enable Firestore Database in that project.
+    - Create a service account key (JSON file) from Firebase Console -> Project Settings -> Service Accounts.
+    - Save that JSON key file on your system.
 
 5.  **Configure environment variables:**
     - Create a `.env` file in the `backend` directory.
-    - Add your database credentials and Google API key to the `.env` file:
+    - Add your Firebase and Google API key values to the `.env` file:
       ```
+      FIREBASE_CREDENTIALS_PATH=path_to_service_account_json
+      GOOGLE_API_KEY=your_google_api_key
+      ```
+    - If you want to run one-time Postgres -> Firebase migration, also add:
+      ```
+      DB_USER=postgres
       DB_PASSWORD=your_db_password
       DB_HOST=localhost
       DB_PORT=5432
-      GOOGLE_API_KEY=your_google_api_key
+      PG_AUTH_DB=postgres
+      PG_GRADES_DB=btech_grades
       ```
 
 6.  **Run the backend server:**
@@ -75,6 +83,12 @@ Follow these instructions to set up and run the project on your local machine.
     uvicorn app:app --reload
     ```
     The backend will be running at `http://127.0.0.1:8000`.
+
+7.  **(Optional) Migrate existing local Postgres data to Firebase:**
+    ```bash
+    python migrate_postgres_to_firebase.py
+    ```
+    This copies `students`, `semesters`, and `grade_sheets` rows to Firestore.
 
 ### Frontend Setup
 
@@ -101,6 +115,7 @@ Follow these instructions to set up and run the project on your local machine.
 3.  Once registered, log in with your credentials.
 4.  Explore the dashboard to see your overall and semester-wise performance.
 5.  Use the "Custom Queries" page to ask questions about your grades or select from pre-defined queries.
+6.  Use the Semester Analysis page to delete an uploaded semester if needed.
 
 ## License
 

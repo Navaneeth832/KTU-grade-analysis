@@ -41,7 +41,7 @@ def display_ast_table(data):
 def extract_pdf(filepath,ktuid):
     prompt = "Scan this semester grade sheet and extract the details and provide the structured output."
     response = client.models.generate_content(
-      model="gemini-2.5-flash",
+      model="gemini-3.1-flash-lite-preview",
       contents=[
           types.Part.from_bytes(
             data=filepath.read_bytes(),

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Calendar, Search, X } from 'lucide-react';
+import { Home, BarChart3, Calendar, Search, PlusCircle, X } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ const navigationItems = [
   { path: '/overall-analysis', icon: BarChart3, label: 'Overall Analysis' },
   { path: '/semester-analysis', icon: Calendar, label: 'Semester-wise Analysis' },
   { path: '/custom-queries', icon: Search, label: 'Custom Queries' },
+  { path: '/add-semester', icon: PlusCircle, label: 'Add Semester' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {

@@ -5,7 +5,7 @@ export const BACKEND_URL = 'http://localhost:8000';
 
 export const api = axios.create({
   baseURL: BACKEND_URL,
-  timeout: 30000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -29,9 +29,11 @@ api.interceptors.request.use(
 export const endpoints = {
   overallStats: `/overall-stats`,
   semesterData: (id: number) => `/semester/${id}`,
+  deleteSemester: (id: number) => `/semester/${id}`,
   semesters: '/semesters',
   customQuery: (queryId: string,prompt: string) => `/custom-query/${queryId}?prompt=${encodeURIComponent(prompt)}`,
   customQueries: '/custom-queries',
   login: '/login',
   register: '/register',
+  addSemester: '/add-semester',
 };

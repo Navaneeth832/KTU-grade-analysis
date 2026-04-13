@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Calendar, Search, TrendingUp } from 'lucide-react';
+import { BarChart3, Calendar, PlusCircle, Search, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Home: React.FC = () => {
@@ -25,6 +25,13 @@ export const Home: React.FC = () => {
       icon: Search,
       path: '/custom-queries',
       color: 'from-emerald-500 to-teal-600',
+    },
+    {
+      title: 'Add Semester',
+      description: 'Upload additional semester marksheets after login',
+      icon: PlusCircle,
+      path: '/add-semester',
+      color: 'from-amber-500 to-orange-600',
     },
   ];
 

@@ -1,7 +1,7 @@
 fastapi
 uvicorn
-psycopg2-binary
 python-dotenv
 python-multipart
-pandas
 google-generativeai
+firebase-admin
+psycopg2-binary

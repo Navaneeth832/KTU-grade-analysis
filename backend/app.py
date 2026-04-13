@@ -1,28 +1,23 @@
-# backend/main.py (FastAPI)
-from fastapi import FastAPI, HTTPException, Query, File, UploadFile, Form
-from typing import Optional
-import psycopg2
-import pandas as pd
-import traceback
+from collections import Counter
+from pathlib import Path
 import os
+import shutil
+import traceback
+from typing import Optional
+
 from dotenv import load_dotenv
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+from extraction import extract_pdf
+from firebase_client import delete_semester_data, get_firestore_db
 from promptquery import query_maker
 from sql_generator import sql_generate
-from extraction import extract_pdf
-from pathlib import Path
-import requests
-from fastapi import Request
-import shutil
 
 load_dotenv()
 
 app = FastAPI()
-
-class User(BaseModel):
-    ktuId: str
-    password: str
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,270 +26,309 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-def run_dml(query, params=None, db="postgres"):
-    try:
-        conn = psycopg2.connect(
-            dbname=db,
-            user="postgres",
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT")
-        )
-        cur = conn.cursor()
-        cur.execute(query, params)  # safe parameterized query
-        conn.commit()
-        cur.close()
-        conn.close()
-        return {"status": "success"}
-    
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-def run_query(query, db="btech_grades"):
-    conn = psycopg2.connect(
-        dbname=db,
-        user="postgres",
-        password=os.getenv("DB_PASSWORD"),
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT")
-    )
-    df = pd.read_sql(query, conn)
-    conn.close()
-    return df.to_dict(orient="records")
+
+
+class User(BaseModel):
+    ktuId: str
+    password: str
+
+
+def get_ktu_id_from_request(request: Request) -> str:
+    token = request.headers.get("Authorization")
+    if not token or not token.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
+    return token.split("Bearer ")[1].strip()
+
+
+def _get_student_ref(ktu_id: str):
+    db = get_firestore_db()
+    return db.collection("students").document(ktu_id)
+
+
+def _get_semesters(ktu_id: str):
+    student_ref = _get_student_ref(ktu_id)
+    docs = student_ref.collection("semesters").stream()
+    semesters = [doc.to_dict() for doc in docs if doc.exists]
+    semesters.sort(key=lambda x: int(x.get("sem_id", 0)))
+    return semesters
+
+
+def _get_grades(ktu_id: str, sem_id: Optional[int] = None, limit: Optional[int] = None):
+    student_ref = _get_student_ref(ktu_id)
+    query = student_ref.collection("grade_sheets")
+    if sem_id is not None:
+        query = query.where("sem_id", "==", sem_id)
+    if limit is not None:
+        query = query.limit(limit)
+    docs = query.stream()
+    grades = [doc.to_dict() for doc in docs if doc.exists]
+    grades.sort(key=lambda x: (int(x.get("sem_id", 0)), str(x.get("subject", ""))))
+    return grades
+
 
 @app.get("/overall/sgpa")
-def overall_sgpa():
-    query = """
-    SELECT CONCAT('semester', sem_id) AS semester, sgpa
-    FROM semesters;
-    """
-    return run_query(query)
+def overall_sgpa(request: Request):
+    ktu_id = get_ktu_id_from_request(request)
+    semesters = _get_semesters(ktu_id)
+    return [{"semester": f"semester{row['sem_id']}", "sgpa": row.get("sgpa", 0)} for row in semesters]
+
 
 @app.post("/overall-stats")
 def overall_stats(request: Request):
-    sem_ids = run_query("SELECT sem_id FROM semesters;")
-
     try:
-        token = request.headers.get("Authorization")
-        if not token or not token.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
+        ktu_id = get_ktu_id_from_request(request)
+        # Cap grade reads to keep the endpoint responsive even for large datasets.
+        grades = _get_grades(ktu_id, limit=1200)
+        semesters = _get_semesters(ktu_id)
 
-        ktuid = token.split("Bearer ")[1].strip()
-        print("KTU ID:", ktuid)
-        query = "select grade,count(*) from grade_sheets where ktu_id='" + ktuid + "' group by grade order by count desc;"
-        query2 = "select sem_id,sgpa as overall_sgpa from semesters where ktu_id='" + ktuid + "' order by sem_id;"
-        query3 = "select subject,gpa from grade_sheets order by gpa desc limit 5;"
-        query4 = f"""SELECT
-            ROUND((SUM(sgpa * credits) / SUM(credits))::numeric, 2) AS cgpa,
-            SUM(credits) AS total_credits,
-            COUNT(*) AS total_sems
-            FROM semesters where ktu_id='{ktuid}';"""
+        grade_counter = Counter(str(row.get("grade", "")) for row in grades if row.get("grade"))
+        grade_distribution = [{"grade": grade, "count": count} for grade, count in grade_counter.items()]
+        grade_distribution.sort(key=lambda x: x["count"], reverse=True)
 
-        rows = run_query(query)
-        rows2 = run_query(query2)
-        rows3 = run_query(query3)
-        rows4 = run_query(query4)
-        returndata = {
-            "cgpa": rows4[0]["cgpa"],
-            "totalCredits": rows4[0]["total_credits"],
-            "completedSemesters": rows4[0]["total_sems"],
-            "gradeDistribution": [
-                {"grade": row["grade"], "count": row["count"]}
-                for row in rows
+        subject_performance = sorted(
+            [
+                {"subject": row.get("subject", ""), "averageGrade": float(row.get("gpa", 0))}
+                for row in grades
             ],
-            "semesterGpas": [
-                {"semester": str(row["sem_id"]), "gpa": float(row["overall_sgpa"])}
-                for row in rows2
-            ],
-            "subjectPerformance": [
-                {"subject": row["subject"], "averageGrade": row["gpa"]}
-                for row in rows3
-            ]
+            key=lambda x: x["averageGrade"],
+            reverse=True,
+        )[:5]
+
+        semester_gpas = [
+            {"semester": str(row.get("sem_id", "")), "gpa": float(row.get("sgpa", 0))}
+            for row in semesters
+        ]
+
+        total_credits = sum(int(row.get("credits", 0)) for row in semesters)
+        weighted_sum = sum(float(row.get("sgpa", 0)) * int(row.get("credits", 0)) for row in semesters)
+        cgpa = round((weighted_sum / total_credits), 2) if total_credits else 0
+
+        return {
+            "cgpa": cgpa,
+            "totalCredits": total_credits,
+            "completedSemesters": len(semesters),
+            "gradeDistribution": grade_distribution,
+            "semesterGpas": semester_gpas,
+            "subjectPerformance": subject_performance,
         }
-        print(returndata)
-        return returndata
-
     except Exception as e:
-        print("❌ Error in /overall-stats:", e)
+        print("Error in /overall-stats:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/custom-query/{queryId}")
 def custom_queries(queryId: str, request: Request, prompt: Optional[str] = Query(None)):
     try:
-        token = request.headers.get("Authorization")
-        if not token or not token.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
+        ktu_id = get_ktu_id_from_request(request)
+        grades = _get_grades(ktu_id, limit=1200)
+        semesters = _get_semesters(ktu_id)
 
-        ktuid = token.split("Bearer ")[1].strip()
-        query_map = {
-            "1": {
-                "name": "Top Performing Subjects",
-                "query": "select subject,grade from grade_sheets where ktu_id='" + ktuid + "' order by gpa desc limit 5;"
-            },
-            "2": {
-                "name": "Lowest GPA Semester",
-                "query": f"""SELECT CONCAT('Semester ', sem_id) AS semester, sgpa
-                            FROM semesters where ktu_id='{ktuid}'
-                            ORDER BY sgpa ASC
-                            LIMIT 1;"""
-            },
-            "3": {
-                "name": "Grade Distribution Analysis",
-                "query": "select grade,count(*) from grade_sheets where ktu_id='" + ktuid + "' group by grade order by count desc;"
-            },
-            "4": {
-                "name": "Credit Analysis",
-                "query": "SELECT CONCAT('Semester ', sem_id) AS semester, credits FROM semesters where ktu_id='" + ktuid + "' ORDER BY sem_id;"
-            },
-            "5": {
-                "name": "Custom query with AI",
-                "query": ""
-            }
-        }
-
-        if queryId not in query_map:
-            raise HTTPException(status_code=400, detail="Invalid queryId")
-        query_info = query_map[queryId]
-        if queryId == "5":
-            print("Generating query for prompt:", prompt)
-            query = query_maker(prompt)
-            print(query)
-            if query == 'Not a query':
-                raise HTTPException(status_code=400, detail="The prompt does not correspond to a valid SQL query.")
-            rows = run_query(query)
-        else:
-            rows = run_query(query_info["query"])
-
-        if not rows:
+        if queryId == "1":
+            rows = sorted(grades, key=lambda x: float(x.get("gpa", 0)), reverse=True)[:5]
             return {
-                "query": query_info["name"],
-                "headers": [],
-                "data": []
+                "query": "Top Performing Subjects",
+                "headers": ["subject", "grade"],
+                "data": [[row.get("subject", ""), row.get("grade", "")] for row in rows],
             }
 
-        headers = list(rows[0].keys())
-        data = [list(row.values()) for row in rows]
+        if queryId == "2":
+            if not semesters:
+                return {"query": "Lowest GPA Semester", "headers": [], "data": []}
+            lowest = min(semesters, key=lambda x: float(x.get("sgpa", 0)))
+            return {
+                "query": "Lowest GPA Semester",
+                "headers": ["semester", "sgpa"],
+                "data": [[f"Semester {lowest.get('sem_id', '')}", float(lowest.get("sgpa", 0))]],
+            }
 
-        return {
-            "query": query_info["name"],
-            "headers": headers,
-            "data": data
-        }
+        if queryId == "3":
+            grade_counter = Counter(str(row.get("grade", "")) for row in grades if row.get("grade"))
+            data = [[grade, count] for grade, count in sorted(grade_counter.items(), key=lambda item: item[1], reverse=True)]
+            return {"query": "Grade Distribution Analysis", "headers": ["grade", "count"], "data": data}
 
+        if queryId == "4":
+            data = [[f"Semester {row.get('sem_id', '')}", int(row.get("credits", 0))] for row in semesters]
+            return {"query": "Credit Analysis", "headers": ["semester", "credits"], "data": data}
+
+        if queryId == "5":
+            if not prompt:
+                raise HTTPException(status_code=400, detail="Prompt is required for queryId 5")
+            result = query_maker(prompt, grades, semesters)
+            if not isinstance(result, dict):
+                return {"query": "Invalid prompt", "headers": [], "data": []}
+            if not isinstance(result.get("headers"), list) or not isinstance(result.get("data"), list):
+                return {"query": "Invalid prompt", "headers": [], "data": []}
+            return result
+
+        raise HTTPException(status_code=400, detail="Invalid queryId")
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"❌ Error in /custom-query/{queryId}:", e)
+        print(f"Error in /custom-query/{queryId}:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/semester/{semester_id}")
 def semester_analysis(semester_id: int, request: Request):
-    """
-    This returns structured semester data instead of raw table rows
-    """
     try:
-        token = request.headers.get("Authorization")
-        if not token or not token.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
-
-        ktuid = token.split("Bearer ")[1].strip()
-        query = f"SELECT subject, grade, gpa, overall_sgpa FROM grade_sheets WHERE sem_id = {semester_id} and ktu_id='{ktuid}';"
-        rows = run_query(query)
-
-        if not rows:
+        ktu_id = get_ktu_id_from_request(request)
+        grades = _get_grades(ktu_id, sem_id=semester_id)
+        if not grades:
             raise HTTPException(status_code=404, detail="No data found for this semester")
 
-        semester_data = {
+        semester_doc = next((row for row in _get_semesters(ktu_id) if int(row.get("sem_id", 0)) == semester_id), None)
+        sgpa = float(semester_doc.get("sgpa", 0)) if semester_doc else float(grades[0].get("overall_sgpa", 0))
+
+        return {
             "semester": semester_id,
-            "sgpa": rows[0]["overall_sgpa"],
-            "totalCredits": len(rows),
+            "sgpa": sgpa,
+            "totalCredits": len(grades),
             "grades": [
                 {
-                    "subject": row["subject"],
-                    "grade": row["grade"],
-                    "points": row["gpa"],
-                    "credits": 4
+                    "subject": row.get("subject", ""),
+                    "grade": row.get("grade", ""),
+                    "points": float(row.get("gpa", 0)),
+                    "credits": 4,
                 }
-                for row in rows
-            ]
+                for row in grades
+            ],
         }
-
-        return semester_data
-
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/semesters")
 def get_semesters(request: Request):
     try:
-        token = request.headers.get("Authorization")
-        if not token or not token.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
-
-        ktuid = token.split("Bearer ")[1].strip()
-        query = f"select distinct sem_id from grade_sheets where ktu_id='{ktuid}' order by sem_id;"
-        rows = run_query(query)
-        return [row['sem_id'] for row in rows]
-
+        ktu_id = get_ktu_id_from_request(request)
+        return [int(row.get("sem_id", 0)) for row in _get_semesters(ktu_id)]
     except Exception as e:
-        print(f"❌ Error in /semesters:", e)
+        print("Error in /semesters:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/semester/{semester_id}")
+def delete_semester(semester_id: int, request: Request):
+    try:
+        ktu_id = get_ktu_id_from_request(request)
+        student_ref = _get_student_ref(ktu_id)
+        if not student_ref.get().exists:
+            raise HTTPException(status_code=404, detail="Student account not found")
+
+        semester_doc = student_ref.collection("semesters").document(str(semester_id)).get()
+        if not semester_doc.exists:
+            raise HTTPException(status_code=404, detail="Semester not found")
+
+        deleted_courses = delete_semester_data(ktu_id, semester_id)
+        return {
+            "message": f"Semester {semester_id} deleted successfully",
+            "deletedCourses": deleted_courses,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Error in DELETE /semester/{semester_id}:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/register")
 async def register(
     ktuId: str = Form(...),
     name: str = Form(...),
     password: str = Form(...),
-    gradeSheet: UploadFile = File(...)
+    gradeSheet: UploadFile = File(...),
 ):
+    file_path = None
     try:
-        # Save the uploaded file temporarily
+        student_ref = _get_student_ref(ktuId)
+        if student_ref.get().exists:
+            raise HTTPException(status_code=409, detail="User already exists")
+
         temp_dir = "temp_files"
         os.makedirs(temp_dir, exist_ok=True)
         file_path = os.path.join(temp_dir, gradeSheet.filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(gradeSheet.file, buffer)
 
-        # Extract data from the PDF
         extracted_data = extract_pdf(Path(file_path), ktuId)
         if not extracted_data:
-            raise HTTPException(status_code=400, detail="Could not extract data from the provided PDF. Please ensure it is a valid grade sheet.")
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract data from the provided PDF. Please ensure it is a valid grade sheet.",
+            )
 
-        # Generate and execute SQL
+        student_ref.set({"ktu_id": ktuId, "name": name, "password": password}, merge=True)
         sql_generate(ktuId, extracted_data)
-
-        # Clean up the temporary file
-        os.remove(file_path)
-
-        result = run_dml(
-            "INSERT INTO students (ktu_id, name, password) VALUES (%s, %s, %s)",
-            (ktuId, name, password)
-        )
-        if result.get("status") == "error":
-            raise HTTPException(status_code=500, detail=f"Failed to register user: {result.get('message')}")
-
-        print("✅ User registered successfully:", ktuId)
         return {"message": "User registered successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        print("❌ Error in /register:", e)
+        print("Error in /register:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+
+
+@app.post("/add-semester")
+async def add_semester(request: Request, gradeSheet: UploadFile = File(...)):
+    file_path = None
+    try:
+        ktu_id = get_ktu_id_from_request(request)
+        student_ref = _get_student_ref(ktu_id)
+        if not student_ref.get().exists:
+            raise HTTPException(status_code=404, detail="Student account not found")
+
+        temp_dir = "temp_files"
+        os.makedirs(temp_dir, exist_ok=True)
+        safe_filename = f"{ktu_id}_{gradeSheet.filename}"
+        file_path = os.path.join(temp_dir, safe_filename)
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(gradeSheet.file, buffer)
+
+        extracted_data = extract_pdf(Path(file_path), ktu_id)
+        if not extracted_data:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract data from the provided PDF. Please ensure it is a valid grade sheet.",
+            )
+
+        sql_generate(ktu_id, extracted_data)
+        return {"message": "Semester marksheet added successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Error in /add-semester:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+
 
 @app.post("/login")
 def login(user: User):
-    print(user)
-    prompt = "select * from students where ktu_id='" + user.ktuId + "' and password='" + user.password + "';"
     try:
-        rows = run_query(prompt, "postgres")
-        if len(rows) == 0:
+        student_doc = _get_student_ref(user.ktuId).get()
+        if not student_doc.exists:
             raise HTTPException(status_code=401, detail="Incorrect credentials")
-        else:
-            print("✅ Login successful for user:", user.ktuId)
-            return {"token": user.ktuId}
+
+        student = student_doc.to_dict() or {}
+        if student.get("password") != user.password:
+            raise HTTPException(status_code=401, detail="Incorrect credentials")
+
+        return {"token": user.ktuId}
+    except HTTPException:
+        raise
     except Exception as e:
-        print("❌ Error in /login:", e)
+        print("Error in /login:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    
-
-

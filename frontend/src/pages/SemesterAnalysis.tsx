@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Trophy, ChevronDown } from 'lucide-react';
+import { Calendar, Trophy, ChevronDown, Trash2 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { SemesterData } from '../types';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -61,6 +61,36 @@ export const SemesterAnalysis: React.FC = () => {
     setSelectedSemester(semester);
     setDropdownOpen(false);
     fetchSemesterData(semester);
+  };
+
+  const handleDeleteSemester = async () => {
+    if (!selectedSemester) {
+      toast.error('Select a semester first');
+      return;
+    }
+
+    const semId = parseInt(selectedSemester.replace('semester', ''));
+    if (!Number.isFinite(semId)) {
+      toast.error('Invalid semester selected');
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete semester ${semId}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      const message = await apiService.deleteSemester(semId);
+      toast.success(message || 'Semester deleted successfully');
+      setSelectedSemester('');
+      setSemesterData(null);
+      await fetchSemesters();
+    } catch (error) {
+      console.error('Error deleting semester:', error);
+      toast.error('Failed to delete semester');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getGradeColor = (grade: string) => {
@@ -143,6 +173,14 @@ export const SemesterAnalysis: React.FC = () => {
                 )}
               </AnimatePresence>
             </div>
+            <button
+              onClick={handleDeleteSemester}
+              disabled={!selectedSemester || loading}
+              className="ml-3 inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-red-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition-all duration-200"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
           </motion.div>
 
           {loading && <LoadingSpinner />}

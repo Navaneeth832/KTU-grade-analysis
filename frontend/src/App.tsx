@@ -10,6 +10,7 @@ import Register from './pages/Register';
 import { OverallAnalysis } from './pages/OverallAnalysis';
 import { SemesterAnalysis } from './pages/SemesterAnalysis';
 import { CustomQueries } from './pages/CustomQueries';
+import AddSemester from './pages/AddSemester';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
                   <Route path="/overall-analysis" element={<OverallAnalysis />} />
                   <Route path="/semester-analysis" element={<SemesterAnalysis />} />
                   <Route path="/custom-queries" element={<CustomQueries />} />
+                  <Route path="/add-semester" element={<AddSemester />} />
                 </Route>
               </Routes>
             </div>

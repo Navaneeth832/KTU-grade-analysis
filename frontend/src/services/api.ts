@@ -15,6 +15,11 @@ export const apiService = {
     return response.data;
   },
 
+  deleteSemester: async (semester: number): Promise<string> => {
+    const response = await api.delete(endpoints.deleteSemester(semester));
+    return response.data.message;
+  },
+
   getSemesters: async (): Promise<number[]> => {
     const response = await api.get(endpoints.semesters);
     return response.data;
@@ -35,5 +40,16 @@ export const apiService = {
   executelogin: async (ktuId: string, password: string): Promise<string> => {
     const response = await api.post(endpoints.login, { ktuId, password });
     return response.data.token;
+  },
+
+  addSemesterMarksheet: async (gradeSheet: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('gradeSheet', gradeSheet);
+
+    const response = await api.post(endpoints.addSemester, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    return response.data.message;
   },
 };
