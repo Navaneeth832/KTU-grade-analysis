@@ -12,7 +12,7 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('AuthToken');
+    localStorage.removeItem('authToken');
     navigate('/login');
   };
 
